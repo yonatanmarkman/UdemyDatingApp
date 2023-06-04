@@ -350,3 +350,4 @@ MigrationBackup/
 .ionide/
 wwwroot/
 /API/appsettings.json
+/StudentAssets

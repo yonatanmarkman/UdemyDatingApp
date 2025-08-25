@@ -3,7 +3,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { lastValueFrom } from 'rxjs';
 import { Nav } from '../layout/nav/nav';
 import { AccountService } from '../core/services/account-service';
-import { Member } from '../types/user';
+import { User } from '../types/user';
 import { Home } from "../features/home/home";
 
 @Component({
@@ -17,7 +17,7 @@ export class App implements OnInit {
   private accountService = inject(AccountService);
   private http = inject(HttpClient);
   protected title = 'Udemy Dating App';
-  protected members = signal<Member[]>([])
+  protected members = signal<User[]>([])
 
   async ngOnInit() {
     this.members.set(await this.getMembers());
@@ -43,10 +43,10 @@ export class App implements OnInit {
     }
   }
 
-  private async getMembers(): Promise<Member[]> {
+  private async getMembers(): Promise<User[]> {
     try {
       return lastValueFrom(
-        this.http.get<Member[]>('https://localhost:5201/api/members')
+        this.http.get<User[]>('https://localhost:5201/api/members')
       );
     } catch (error) {
       console.log(error);

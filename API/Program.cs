@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.Tasks;
 using API.Data;
 using API.Interfaces;
 using API.Middleware;
@@ -11,18 +12,19 @@ namespace API
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
             builder.Services.AddControllers();
-            builder.Services.AddDbContext<DataContext>(opt =>
+            builder.Services.AddDbContext<AppDbContext>(opt =>
             {
                 opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
             builder.Services.AddCors();
             builder.Services.AddScoped<ITokenService, TokenService>();
+            builder.Services.AddScoped<IMemberRepository, MemberRepository>();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
@@ -48,6 +50,21 @@ namespace API
             app.UseAuthorization();
 
             app.MapControllers();
+
+            using IServiceScope scope = app.Services.CreateScope();
+            IServiceProvider services = scope.ServiceProvider;
+
+            try
+            {
+                AppDbContext context = services.GetRequiredService<AppDbContext>();
+                await context.Database.MigrateAsync();
+                await Seed.SeedUsers(context);
+            }
+            catch (Exception ex)
+            {
+                ILogger<Program> logger = services.GetRequiredService<ILogger<Program>>();
+                logger.LogError(ex, "An error occurred during migration. ");
+            }
 
             app.Run();
         }

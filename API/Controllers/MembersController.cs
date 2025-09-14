@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
-public class MembersController(DataContext context) : BaseApiController
+public class MembersController(AppDbContext context) : BaseApiController
 {
     [HttpGet] // /api/members
     public async Task<ActionResult<IEnumerable<AppUser>>> GetMembers()

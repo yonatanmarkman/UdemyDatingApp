@@ -1,5 +1,6 @@
 using System.Text;
 using API.Data;
+using API.Helpers;
 using API.Interfaces;
 using API.Middleware;
 using API.Services;
@@ -23,6 +24,7 @@ namespace API
             });
             builder.Services.AddCors();
             builder.Services.AddScoped<ITokenService, TokenService>();
+            builder.Services.AddScoped<IPhotoService, PhotoService>();
             builder.Services.AddScoped<IMemberRepository, MemberRepository>();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -37,6 +39,10 @@ namespace API
                         ValidateAudience = false
                     };
                 });
+
+            builder.Services.Configure<CloudinarySettings>(
+                builder.Configuration.GetSection("CloudinarySettings")
+            );
 
             WebApplication app = builder.Build();
 

@@ -7,14 +7,16 @@ import { Component, ElementRef, input, output, signal, ViewChild } from '@angula
   styleUrl: './image-upload.css'
 })
 export class ImageUpload {
+  @ViewChild('imageInput') imageInput!: ElementRef<HTMLInputElement>;
+
+  protected errorMessage = signal<string | null>(null);
   protected imageSource = signal<string | ArrayBuffer | null | undefined>(null);
   protected isDragging = false;
   private fileToUpload: File | null = null;
   uploadFile = output<File>();
   loading = input<boolean>(false);
 
-  @ViewChild('imageInput') imageInput!: ElementRef<HTMLInputElement>;
-  
+
   onDragOver(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
@@ -35,8 +37,7 @@ export class ImageUpload {
     if (event.dataTransfer?.files.length) {
       // Allow only one image upload at a time
       const imageFile = event.dataTransfer.files[0];
-      this.previewImage(imageFile);
-      this.fileToUpload = imageFile;
+      this.validateAndSetImage(imageFile);
     }
   }
 
@@ -47,13 +48,13 @@ export class ImageUpload {
     if (files?.length === 1) {
       // Allow only one image upload at a time
       const imageFile = files[0];
-      this.previewImage(imageFile);
-      this.fileToUpload = imageFile;
+      this.validateAndSetImage(imageFile);
     }
 
     // Clean the 'memory' of the element
     this.imageInput.nativeElement.value = '';
   }
+
 
   onCancel() {
     this.fileToUpload = null;
@@ -66,11 +67,26 @@ export class ImageUpload {
     }
   }
 
+  private validateAndSetImage(imageFile: File) {
+    this.errorMessage.set(null);
+    if (this.isValidImageFile(imageFile)) {
+      this.previewImage(imageFile);
+      this.fileToUpload = imageFile;
+    }
+    else {
+      this.errorMessage.set('Please upload a valid image file');
+    }
+  }
+
   private previewImage(imageFile: File) {
     const reader = new FileReader();
     reader.onload = (e) => {
       this.imageSource.set(e.target?.result);
     };
     reader.readAsDataURL(imageFile);
+  }
+
+  private isValidImageFile(file: File): boolean {
+    return file.type.startsWith('image/') && file.type !== 'image/svg+xml';
   }
 }

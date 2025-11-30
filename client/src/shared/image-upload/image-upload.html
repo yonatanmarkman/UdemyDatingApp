@@ -15,6 +15,10 @@
                 <p class="mb-2 text-lg">Click to upload or drag and drop</p>
                 <input #imageInput id="dropzone-file" type="file" class="hidden" accept="image/*"
                 (change)="onChange()">
+                
+                @if (errorMessage() != null) {
+                    <p class="text-red-500 text-sm mt-2">{{ errorMessage() }}</p>
+                }
         </label>
     </div>
     @if (imageSource()) {

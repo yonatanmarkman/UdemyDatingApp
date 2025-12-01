@@ -12,10 +12,10 @@ export type Member = {
 }
 
 export type Photo = {
-  id: number
-  url: string
-  publicId?: string
-  memberId: string
+  id: number;
+  url: string;
+  publicId?: string;
+  memberId: string;
 }
 
 export type EditableMember = {

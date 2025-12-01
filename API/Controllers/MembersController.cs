@@ -115,4 +115,30 @@ public class MembersController(
         // Saving failed - bad request
         return BadRequest("Problem adding photo. ");
     }
+
+    [HttpPut("set-main-photo/{photoId}")]
+    public async Task<ActionResult> SetMainPhoto(int photoId)
+    {
+        Member? member = await memberRepository
+            .GetMemberForUpdateAsync(User.GetMemberId());
+        
+        if (member == null)
+            return BadRequest("Cannot get member from token");
+
+        Photo? photo = member.Photos
+            .FirstOrDefault(x => x.Id == photoId);
+
+        if (photo == null || member.ImageUrl == photo.Url)
+        {
+            return BadRequest("Cannot set this as main image");
+        }
+
+        member.ImageUrl = photo.Url;
+        member.User.ImageUrl = photo.Url;
+
+        if (await memberRepository.SaveAllAsync())
+            return NoContent();
+        
+        return BadRequest("Problem setting main photo. ");
+    }
 }

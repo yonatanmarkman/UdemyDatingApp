@@ -130,7 +130,7 @@ public class MembersController(
 
         if (photo == null || member.ImageUrl == photo.Url)
         {
-            return BadRequest("Cannot set this as main image");
+            return BadRequest("Cannot set this as the profile photo. ");
         }
 
         member.ImageUrl = photo.Url;
@@ -139,6 +139,42 @@ public class MembersController(
         if (await memberRepository.SaveAllAsync())
             return NoContent();
         
-        return BadRequest("Problem setting main photo. ");
+        return BadRequest("Problem setting profile photo. ");
+    }
+
+    [HttpDelete("delete-photo/{photoId}")]
+    public async Task<ActionResult> DeletePhoto(int photoId)
+    {
+        Member? member = await memberRepository
+            .GetMemberForUpdateAsync(User.GetMemberId());
+        
+        if (member == null)
+            return BadRequest("Cannot get member from token");
+
+        Photo? photo = member.Photos
+            .FirstOrDefault(x => x.Id == photoId);
+        
+        // Do not allow the member to delete their profile photo
+        if (photo == null || photo.Url == member.ImageUrl)
+        {
+            return BadRequest("Cannot delete this photo. ");
+        }
+
+        if (photo.PublicId != null)
+        {
+            DeletionResult result
+                 = await photoService.DeletePhotoAsync(photo.PublicId);
+            if (result.Error != null)
+            {
+                return BadRequest(result.Error.Message);
+            }
+        }
+
+        member.Photos.Remove(photo);
+
+        if (await memberRepository.SaveAllAsync())
+            return Ok();
+
+        return BadRequest("Problem deleting the photo. ");
     }
 }

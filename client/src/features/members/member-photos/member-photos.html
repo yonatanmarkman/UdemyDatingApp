@@ -25,5 +25,5 @@
         }
     }
 } @else {
-    <app-image-upload (uploadFile)="onUploadImage($event)" [loading]="loading()" />
+    <app-image-upload (uploadedFileOutput)="onUploadImage($event)" [loading]="loading()" />
 }

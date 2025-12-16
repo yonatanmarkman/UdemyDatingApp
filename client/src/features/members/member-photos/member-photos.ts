@@ -17,7 +17,7 @@ import { User } from '../../../types/user';
 export class MemberPhotos implements OnInit {
   protected memberService = inject(MemberService);
   protected accountService = inject(AccountService);
-  
+
   private route = inject(ActivatedRoute);
   protected photos = signal<Photo[]>([]);
   protected loading = signal(false);
@@ -38,6 +38,11 @@ export class MemberPhotos implements OnInit {
         this.memberService.editMode.set(false);
         this.loading.set(false);
         this.photos.update(photos => [...photos, photo]);
+        // If member doesn't have a profile picture,
+        // set the first photo to be his profile picture.
+        if (!this.memberService.member()?.imageUrl) {
+          this.updateProfilePhotoOnClientSideObjects(photo);
+        }
       },
       error: error => {
         console.log('Error uploading image: ', error);
@@ -50,36 +55,40 @@ export class MemberPhotos implements OnInit {
     const array = this.photos();
 
     const profilePhoto = array
-        .find(item => item.url === this.memberService.member()?.imageUrl);
+      .find(item => item.url === this.memberService.member()?.imageUrl);
 
     if (profilePhoto == null)
       return array;
-    
+
     const otherPhotos = array
-        .filter(item => item.id !== profilePhoto?.id)
-        .sort((a, b) => a.id - b.id);
+      .filter(item => item.id !== profilePhoto?.id)
+      .sort((a, b) => a.id - b.id);
 
     return [profilePhoto, ...otherPhotos];
   }
 
-  setMainPhoto(photoFile: Photo) {
-    this.memberService.setMainPhoto(photoFile).subscribe({
+  setMainPhoto(photo: Photo) {
+    this.memberService.setMainPhoto(photo).subscribe({
       next: () => {
-        const currentUser = this.accountService.currentUser();
-        if (currentUser) {
-          currentUser.imageUrl = photoFile.url;
-        }
-        this.accountService.setCurrentUser(currentUser as User);
-        this.memberService.member.update(member => ({
-          ...member,
-          imageUrl: photoFile.url
-        }) as Member);
+        this.updateProfilePhotoOnClientSideObjects(photo);
       }
     })
   }
 
-  isMainPhoto(photoFile: Photo) {
-    return photoFile.url === this.memberService.member()?.imageUrl;
+  updateProfilePhotoOnClientSideObjects(photo: Photo) {
+    const currentUser = this.accountService.currentUser();
+    if (currentUser) {
+      currentUser.imageUrl = photo.url;
+    }
+    this.accountService.setCurrentUser(currentUser as User);
+    this.memberService.member.update(member => ({
+      ...member,
+      imageUrl: photo.url
+    }) as Member);
+  }
+
+  isMainPhoto(photo: Photo) {
+    return photo.url === this.memberService.member()?.imageUrl;
   }
 
   deletePhoto(photoId: number) {

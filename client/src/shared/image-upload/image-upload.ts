@@ -13,7 +13,7 @@ export class ImageUpload {
   protected imageSource = signal<string | ArrayBuffer | null | undefined>(null);
   protected isDragging = false;
   private fileToUpload: File | null = null;
-  uploadFile = output<File>();
+  uploadedFileOutput = output<File>();
   loading = input<boolean>(false);
 
 
@@ -63,7 +63,7 @@ export class ImageUpload {
 
   onUploadFile() {
     if (this.fileToUpload) {
-      this.uploadFile.emit(this.fileToUpload);
+      this.uploadedFileOutput.emit(this.fileToUpload);
     }
   }
 

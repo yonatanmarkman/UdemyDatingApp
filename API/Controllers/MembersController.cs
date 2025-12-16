@@ -90,7 +90,7 @@ public class MembersController(
 
         if (result.Error != null)
             return BadRequest(result.Error.Message);
-        
+
         // Result is success - create photo object, and update the member object
         var photo = new Photo
         {
@@ -99,7 +99,8 @@ public class MembersController(
             MemberId = User.GetMemberId()
         };
 
-        // Update the profile picture URL
+        // If the member just uploaded his first photo,
+        // update the profile picture URL to reference the first photo.
         if (member.ImageUrl == null)
         {
             member.ImageUrl = photo.Url;
@@ -111,7 +112,7 @@ public class MembersController(
 
         if (await memberRepository.SaveAllAsync())
             return photo;
-        
+
         // Saving failed - bad request
         return BadRequest("Problem adding photo. ");
     }
@@ -121,7 +122,7 @@ public class MembersController(
     {
         Member? member = await memberRepository
             .GetMemberForUpdateAsync(User.GetMemberId());
-        
+
         if (member == null)
             return BadRequest("Cannot get member from token");
 
@@ -138,7 +139,7 @@ public class MembersController(
 
         if (await memberRepository.SaveAllAsync())
             return NoContent();
-        
+
         return BadRequest("Problem setting profile photo. ");
     }
 
@@ -147,17 +148,17 @@ public class MembersController(
     {
         Member? member = await memberRepository
             .GetMemberForUpdateAsync(User.GetMemberId());
-        
+
         if (member == null)
             return BadRequest("Cannot get member from token");
 
         Photo? photo = member.Photos
             .FirstOrDefault(x => x.Id == photoId);
-        
+
         // Do not allow the member to delete their profile photo
         if (photo == null || photo.Url == member.ImageUrl)
         {
-            return BadRequest("Cannot delete this photo. ");
+            return BadRequest("Cannot delete the profile photo. ");
         }
 
         if (photo.PublicId != null)

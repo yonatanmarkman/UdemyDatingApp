@@ -9,7 +9,7 @@ public class Member
     public DateOnly DateOfBirth { get; set; }
     /*
         Although the ImageUrl and the DisplayName exist in AppUser,
-        we still want thes properties here, for efficient fast-access,
+        we still want these properties here, for efficient fast-access,
         without joining the Member table with the AppUser table.
     */
     public string? ImageUrl { get; set; } 

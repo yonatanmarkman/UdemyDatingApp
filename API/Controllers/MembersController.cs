@@ -1,6 +1,7 @@
 using API.DTOs;
 using API.Entities;
 using API.Extensions;
+using API.Helpers;
 using API.Interfaces;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Authorization;
@@ -15,9 +16,11 @@ public class MembersController(
      : BaseApiController
 {
     [HttpGet] // /api/members
-    public async Task<ActionResult<IReadOnlyList<Member>>> GetMembers()
+    public async Task<ActionResult<PaginatedResult<Member>>> GetMembers(
+        [FromQuery] PagingParams pagingParams)
     {
-        IReadOnlyList<Member> result = await memberRepository.GetMembersAsync();
+        PaginatedResult<Member> result
+             = await memberRepository.GetMembersAsync(pagingParams);
 
         return Ok(result);
     }

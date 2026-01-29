@@ -17,10 +17,12 @@ public class MembersController(
 {
     [HttpGet] // /api/members
     public async Task<ActionResult<PaginatedResult<Member>>> GetMembers(
-        [FromQuery] PagingParams pagingParams)
+        [FromQuery] MemberParams memberParams)
     {
+        memberParams.CurrentMemberId = User.GetMemberId();
+        
         PaginatedResult<Member> result
-             = await memberRepository.GetMembersAsync(pagingParams);
+             = await memberRepository.GetMembersAsync(memberParams);
 
         return Ok(result);
     }

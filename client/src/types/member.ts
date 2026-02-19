@@ -1,3 +1,5 @@
+import { min } from "rxjs"
+
 export type Member = {
   id: string
   dateOfBirth: string
@@ -23,4 +25,12 @@ export type EditableMember = {
   description?: string;
   city: string;
   country: string;
+}
+
+export class MemberParams {
+  gender?: string;
+  minAge = 18;
+  maxAge = 100;
+  pageNumber = 1;
+  pageSize = 10;
 }

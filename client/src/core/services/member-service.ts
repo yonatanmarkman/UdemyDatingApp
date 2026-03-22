@@ -21,6 +21,7 @@ export class MemberService {
     httpParams = httpParams.append('pageSize', memberParams.pageSize);
     httpParams = httpParams.append('minAge', memberParams.minAge);
     httpParams = httpParams.append('maxAge', memberParams.maxAge);
+    httpParams = httpParams.append('orderBy', memberParams.orderBy);
 
     if (memberParams.gender)
       httpParams = httpParams.append('gender', memberParams.gender);

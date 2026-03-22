@@ -28,6 +28,10 @@ export class MemberService {
 
     return this.http.get<PaginatedResult<Member>>(this.baseUrl + 'members',
       {params: httpParams}
+    ).pipe(
+      tap(() => {
+        localStorage.setItem('filters', JSON.stringify(memberParams))
+      })
     );
   }
 

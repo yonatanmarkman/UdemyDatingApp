@@ -1,5 +1,6 @@
 using API.Entities;
 using API.Extensions;
+using API.Helpers;
 using API.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -52,10 +53,13 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<Member>>> GetMembersFromLikes(string predicate)
+        public async Task<ActionResult<PaginatedResult<Member>>> GetMembersFromLikes(
+            [FromQuery] LikesParams likesParams)
         {
-            IReadOnlyList<Member> members
-                 = await likesRepository.GetMembersFromLikesAsync(predicate, User.GetMemberId());
+            likesParams.MemberId = User.GetMemberId();
+
+            PaginatedResult<Member> members
+                 = await likesRepository.GetMembersFromLikesAsync(likesParams);
 
             return Ok(members);
         }

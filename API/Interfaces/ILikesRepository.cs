@@ -1,5 +1,6 @@
 using System;
 using API.Entities;
+using API.Helpers;
 
 namespace API.Interfaces;
 
@@ -7,7 +8,7 @@ public interface ILikesRepository
 {
     Task<MemberLike?> GetMemberLikeAsync(string sourceMemberId, string targetMemberId);
 
-    Task<IReadOnlyList<Member>> GetMembersFromLikesAsync(string predicate, string memberId);
+    Task<PaginatedResult<Member>> GetMembersFromLikesAsync(LikesParams likesParams);
 
     Task<IReadOnlyList<string>> GetCurrentMemberLikeIdsAsync(string memberId);
 

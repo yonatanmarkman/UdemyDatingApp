@@ -11,7 +11,20 @@ export class Paginator {
   pageSize = model(10);
   totalCount = input(0);
   totalPages = input(0);
-  pageSizeOptions = input([5, 10, 20, 50]);
+
+  
+  defaultPageSize!: number;
+  defaultPageSizeOptions = [5, 10, 20, 50];
+
+  ngOnInit() {
+    this.defaultPageSize = this.pageSize(); // Capture the initial value
+  }
+
+  pageSizeOptions = computed(() => 
+    this.defaultPageSizeOptions.includes(this.defaultPageSize)
+      ? this.defaultPageSizeOptions
+      : [this.defaultPageSize, ...this.defaultPageSizeOptions]
+  );
 
   pageChange = output<{pageNumber: number, pageSize: number}>();
 

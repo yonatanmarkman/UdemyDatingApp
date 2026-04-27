@@ -1,1 +1,48 @@
-<p>lists works!</p>
+@if (paginatedMembersFromPredicate(); as paginatedResult)
+{
+    <div class="flex flex-col w-full">
+        @if (paginatedResult.metadata; as metadata)
+        {
+            <div class="flex items-center justify-between w-full mb-3 min-h-[70px]">
+                <div class="tabs tabs-box tabs-lg text-primary w-fit">
+                    @for (tab of tabs; track $index) {
+                        <button role="tab" class="tab" 
+                            [class.tab-active]="this.likesParams.predicate === tab.value" 
+                            (click)="setPredicate(tab.value)"
+                        >
+                            {{tab.label}}
+                        </button>
+                    }
+                </div>
+        
+                @if (metadata.totalCount > 0)
+                {
+                    <app-paginator 
+                        [pageNumber]="metadata.currentPage"
+                        [totalCount]="metadata.totalCount"
+                        [totalPages]="metadata.totalPages"
+                        [pageSize]="metadata.pageSize"
+                        (pageChange)="onPageChange($event)"
+                    />
+                }
+            </div>
+            
+            <div class="grid grid-cols-5 gap-6 mt-3 min-h-[250px]">
+                @if (metadata.totalCount > 0)
+                {
+                    @if (paginatedResult.items; as membersFromPredicate)
+                    {
+                        @for (member of membersFromPredicate; track member.id) {
+                            <app-member-card [member]="member" />
+                        }
+                    }
+                }
+                @else {
+                    <div>
+                        {{"There are no results for this filter. "}}
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

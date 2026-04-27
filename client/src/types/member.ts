@@ -35,3 +35,9 @@ export class MemberParams {
   pageSize = 10;
   orderBy = 'lastActive';
 }
+
+export class LikesParams {
+  predicate = 'liked';
+  pageNumber = 1;
+  pageSize = 3;
+}

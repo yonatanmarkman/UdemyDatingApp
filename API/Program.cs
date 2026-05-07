@@ -23,14 +23,16 @@ namespace API
                 opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
             builder.Services.AddCors();
+
+            // Add services section
             builder.Services.AddScoped<ITokenService, TokenService>();
             builder.Services.AddScoped<IPhotoService, PhotoService>();
             builder.Services.AddScoped<IMemberRepository, MemberRepository>();
+            builder.Services.AddScoped<IMessageRepository, MessageRepository>();
             builder.Services.AddScoped<ILikesRepository, LikesRepository>();
             builder.Services.AddScoped<LogUserActivity>();
             
-            //LogUserActivity
-            
+            // Configure the service of CloudinarySettings
             builder.Services.Configure<CloudinarySettings>(
                 builder.Configuration.GetSection("CloudinarySettings")
             );

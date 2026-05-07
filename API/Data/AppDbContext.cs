@@ -11,11 +11,29 @@ public class AppDbContext(DbContextOptions options) : DbContext(options)
     public DbSet<Member> Members { get; set; }
     public DbSet<Photo> Photos { get; set; }
     public DbSet<MemberLike> Likes { get; set; }
+    public DbSet<Message> Messages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
+        // DeleteBehavior.Restrict allows us to keep
+        // the message, even if the recipient is deleted.
+        modelBuilder.Entity<Message>()
+            .HasOne(x => x.Recipient)
+            .WithMany(m => m.MessagesReceived)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        // Define the exact constraint as above,
+        // only for the senders and sent messages.
+        // This means that both sides must delete the message,
+        // for the message to be removed from our database.
+        modelBuilder.Entity<Message>()
+            .HasOne(x => x.Sender)
+            .WithMany(m => m.MessagesSent)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Define the properties for the MemberLike primary key.
         modelBuilder.Entity<MemberLike>()
             .HasKey(x => new
             {

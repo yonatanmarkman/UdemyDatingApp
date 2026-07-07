@@ -15,7 +15,7 @@ export class InitService {
     if (!userString) return of(null);
     
     const user = JSON.parse(userString);
-    this.accountService.currentUser.set(user);
+    this.accountService.setCurrentUser(user);
     this.likesService.getLikeIds();
 
     return of(null);

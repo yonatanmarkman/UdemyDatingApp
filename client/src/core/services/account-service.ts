@@ -4,6 +4,7 @@ import { LoginCreds, RegisterCreds, User } from '../../types/user';
 import { tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { LikesService } from './likes-service';
+import { CurrentUserService } from './current-user-service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +12,7 @@ import { LikesService } from './likes-service';
 export class AccountService {
   private http = inject(HttpClient);
   private likesService = inject(LikesService);
-  currentUser = signal<User | null>(null);
+  private currentUserService = inject(CurrentUserService);
   private baseUrl = environment.apiUrl;
 
   register(creds: RegisterCreds) {
@@ -36,14 +37,17 @@ export class AccountService {
 
   setCurrentUser(user: User) {
     localStorage.setItem('user', JSON.stringify(user));
-    this.currentUser.set(user);
-    this.likesService.getLikeIds();
+    this.currentUserService.setCurrentUser(user);
+  }
+
+  currentUser() {
+    return this.currentUserService.currentUser();
   }
 
   logout() {
     localStorage.removeItem('user');
     localStorage.removeItem('filters');
     this.likesService.clearLikeIds();
-    this.currentUser.set(null);
+    this.currentUserService.setCurrentUserToNull();
   }
 }

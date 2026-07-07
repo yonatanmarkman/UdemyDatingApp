@@ -2,6 +2,7 @@ using System;
 using API.DTOs;
 using API.Entities;
 using API.Extensions;
+using API.Helpers;
 using API.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -43,5 +44,23 @@ public class MessagesController(
         }
 
         return BadRequest("Failed to send message. ");
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<PaginatedResult<MessageDto>>> GetMessagesByContainer(
+        [FromQuery] MessageParams messageParams)
+    {
+        messageParams.MemberId = User.GetMemberId();
+
+        PaginatedResult<MessageDto> result
+             = await messageRepository.GetMessagesForMemberAsync(messageParams);
+
+        return result;
+    }
+
+    [HttpGet("thread/{recipientId}")]
+    public async Task<ActionResult<IReadOnlyList<MessageDto>>>  GetMessageThread(string recipientId)
+    {
+        return Ok(await messageRepository.GetMessageThreadAsync(User.GetMemberId(), recipientId));
     }
 }

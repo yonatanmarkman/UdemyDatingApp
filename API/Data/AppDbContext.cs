@@ -63,8 +63,13 @@ public class AppDbContext(DbContextOptions options) : DbContext(options)
 
         // Create the value converter from universal DateTime to UTC DateTime
         var dateTimeConverter = new ValueConverter<DateTime, DateTime>(
-            value => value.ToUniversalTime(),
-            value => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+            v => v.ToUniversalTime(),
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc)
+        );
+
+        var nullableDateTimeConverter = new ValueConverter<DateTime?, DateTime?>(
+            v => v.HasValue ? v.Value.ToUniversalTime() : null,
+            v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : null
         );
 
         // For each entity type, go over each property,
@@ -76,6 +81,10 @@ public class AppDbContext(DbContextOptions options) : DbContext(options)
                 if (property.ClrType == typeof(DateTime))
                 {
                     property.SetValueConverter(dateTimeConverter);
+                }
+                else if (property.ClrType == typeof(DateTime?))
+                {
+                    property.SetValueConverter(nullableDateTimeConverter);
                 }
             }
         }

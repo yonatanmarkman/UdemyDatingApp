@@ -10,7 +10,8 @@ public interface IMessageRepository
     bool AddMessage(Message message);
     bool DeleteMessage(Message message);
     Task<Message?> GetMessageAsync(string messageId);
-    Task<PaginatedResult<MessageDto>> GetMessagesForMemberAsync();
+    Task<PaginatedResult<MessageDto>> GetMessagesForMemberAsync(
+        MessageParams messageParams);
     Task<IReadOnlyList<MessageDto>> GetMessageThreadAsync(
         string currentMemberId, 
         string recipientId);

@@ -20,4 +20,20 @@ export class MessageService {
 
     return this.http.get<PaginatedResult<Message>>(this.baseUrl + 'messages', {params});
   }
+
+  getMessageThread(memberId: string) {
+    return this.http.get<Message[]>(this.baseUrl + 'messages/thread/' + memberId);
+  }
+
+  sendMessage(recipientId: string, content: string) {
+    return this.http.post<Message>(this.baseUrl + 'messages', {recipientId, content});
+  }
+
+  checkNewMessagesForRecipient(recipientId: string, lastMessageTimeOnClientSide: string) {
+    let params = new HttpParams();
+
+    params = params.append('lastMessageTimeOnClientSide', lastMessageTimeOnClientSide);
+
+    return this.http.get<boolean>(this.baseUrl + 'checkNewMessages/' + recipientId, {params});
+  }
 }

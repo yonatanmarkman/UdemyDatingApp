@@ -6,11 +6,11 @@ import { Injectable, signal } from '@angular/core';
 export class BusyService {
   busyRequestCount = signal(0);
 
-  busy() {
+  addTask() {
     this.busyRequestCount.update(current => current + 1);
   }
 
-  idle() {
+  removeTask() {
     this.busyRequestCount.update(current => Math.max(0, current - 1));
   }
 }

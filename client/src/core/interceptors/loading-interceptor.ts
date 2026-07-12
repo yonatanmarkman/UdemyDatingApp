@@ -28,6 +28,10 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
     invalidateCache('/likes');
   }
 
+  if (req.method.includes('GET') && req.url.includes('/messages')) {
+    invalidateCache('/messages');
+  }
+
   // If the request method is a 'GET' method,
   // then check for data in the cache, in the given cacheKey.
   if (req.method === 'GET') {
@@ -38,9 +42,9 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   // Add a 'task item' to the busy service,
-  // which will simulate a service that handles a task.
+  // which will simulate a delay of 'handling a task'.
   // This will display a 'loading circle' in the following delay.
-  busyService.busy();
+  busyService.addTask();
 
   // The pipe runs delay of 500 ms, to display the loading circle.
   // After the delay, store the result in the cache.
@@ -52,7 +56,7 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
     finalize(() => {
       // Remove the 'task item' from the busy service,
       // thus freeing the service from the task.
-      busyService.idle()
+      busyService.removeTask()
     })
   );
 };

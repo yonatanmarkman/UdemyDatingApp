@@ -10,7 +10,8 @@ namespace API.Controllers;
 
 public class MessagesController(
     IMessageRepository messageRepository,
-    IMemberRepository memberRepository
+    IMemberRepository memberRepository,
+    IMembersDataCache<DateTime> membersLastMessageTimeCache
     ) : BaseApiController
 {
     [HttpPost]
@@ -38,6 +39,9 @@ public class MessagesController(
 
         messageRepository.AddMessage(message);
 
+        membersLastMessageTimeCache.SetMemberData(sender.Id, message.MessageSent);
+        membersLastMessageTimeCache.SetMemberData(recipient.Id, message.MessageSent);
+
         if (await messageRepository.SaveAllAsync())
         {
             return message.ConvertToDto();
@@ -59,8 +63,26 @@ public class MessagesController(
     }
 
     [HttpGet("thread/{recipientId}")]
-    public async Task<ActionResult<IReadOnlyList<MessageDto>>>  GetMessageThread(string recipientId)
+    public async Task<ActionResult<IReadOnlyList<MessageDto>>> GetMessageThread(string recipientId)
     {
-        return Ok(await messageRepository.GetMessageThreadAsync(User.GetMemberId(), recipientId));
+        var result = await messageRepository.GetMessageThreadAsync(User.GetMemberId(), recipientId);
+
+        if (result != null && result.Count > 0)
+        {
+            membersLastMessageTimeCache.SetMemberData(User.GetMemberId(), result.Last().MessageSent);
+            membersLastMessageTimeCache.SetMemberData(recipientId, result.Last().MessageSent);
+        }
+
+        return Ok(result);
+    }
+
+    
+    [HttpGet("checkNewMessages/{recipientId}")]
+    public bool CheckNewMessagesForRecipient(string recipientId,
+        [FromQuery] DateTime lastMessageTimeOnClientSide)
+    {
+        DateTime lastMessageTime = membersLastMessageTimeCache.GetMemberData(recipientId);
+
+        return lastMessageTime >= lastMessageTimeOnClientSide;
     }
 }

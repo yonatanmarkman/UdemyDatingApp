@@ -57,12 +57,12 @@ public class MessageRepository(AppDbContext context) : IMessageRepository
         int res = await context.Messages
             .Where(x => x.RecipientId == currentMemberId
                 && x.SenderId == recipientId
-                && x.DateRead == null) // Get all the unread messages
+                && x.DateRead == null) // For the current member, iterate all the unread messages:
             .ExecuteUpdateAsync(setters => setters // Set all of them as read, with the current DateTime
                 .SetProperty(m => m.DateRead, DateTime.UtcNow));
 
-        // Get all the messages in the current message thread,
-        // and return their DTO's in order by their 'Sent date'
+        // Aggregate all the messages in the current message thread,
+        // and return their DTO's in order by their 'Sent date'.
         List<MessageDto> messages = await context.Messages
             .Where(m => (m.RecipientId == currentMemberId && m.SenderId == recipientId)
                 || (m.SenderId == currentMemberId && m.RecipientId == recipientId))
@@ -71,6 +71,18 @@ public class MessageRepository(AppDbContext context) : IMessageRepository
             .ToListAsync();
 
         return messages;
+    }
+
+    public async Task<MessageDto?> GetLastMessageInThreadAsync(string currentMemberId, string recipientId)
+    {
+        MessageDto? lastMessage = await context.Messages
+            .Where(m => (m.RecipientId == currentMemberId && m.SenderId == recipientId)
+                || (m.SenderId == currentMemberId && m.RecipientId == recipientId))
+            .OrderBy(m => m.MessageSent)
+            .Select(MessageExtensions.ConvertToDtoProjection())
+            .LastOrDefaultAsync();
+
+        return lastMessage;
     }
 
     public async Task<bool> SaveAllAsync()

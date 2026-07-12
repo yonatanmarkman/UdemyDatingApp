@@ -15,5 +15,8 @@ public interface IMessageRepository
     Task<IReadOnlyList<MessageDto>> GetMessageThreadAsync(
         string currentMemberId, 
         string recipientId);
+    Task<MessageDto?> GetLastMessageInThreadAsync(
+        string currentMemberId, 
+        string recipientId);
     Task<bool> SaveAllAsync();
 }

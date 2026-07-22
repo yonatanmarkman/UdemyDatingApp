@@ -29,6 +29,10 @@ export class MessageService {
     return this.http.post<Message>(this.baseUrl + 'messages', {recipientId, content});
   }
 
+  deleteMessage(id: string) {
+    return this.http.delete(this.baseUrl + 'messages/' + id);
+  }
+
   checkNewMessagesForRecipient(recipientId: string, lastMessageTimeOnClientSide: string) {
     let params = new HttpParams();
 

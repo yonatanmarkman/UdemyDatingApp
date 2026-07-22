@@ -35,10 +35,11 @@ public class MessageRepository(AppDbContext context) : IMessageRepository
                                 .OrderByDescending(m => m.MessageSent)
                                 .AsQueryable();
         
+        // Do not include messages that the current member flagged for deletion.
         query = messageParams.Container switch
         {
-            "Outbox" => query.Where(m => m.SenderId == messageParams.MemberId),
-            _ => query.Where(m => m.RecipientId == messageParams.MemberId)
+            "Outbox" => query.Where(m => !m.SenderDeleted && m.SenderId == messageParams.MemberId),
+            _ => query.Where(m => !m.RecipientDeleted && m.RecipientId == messageParams.MemberId)
         };
 
         // We pass an expression to the query.Select, 
@@ -64,8 +65,12 @@ public class MessageRepository(AppDbContext context) : IMessageRepository
         // Aggregate all the messages in the current message thread,
         // and return their DTO's in order by their 'Sent date'.
         List<MessageDto> messages = await context.Messages
-            .Where(m => (m.RecipientId == currentMemberId && m.SenderId == recipientId)
-                || (m.SenderId == currentMemberId && m.RecipientId == recipientId))
+            .Where(m => (m.RecipientId == currentMemberId 
+                    && !m.RecipientDeleted
+                    && m.SenderId == recipientId)
+                || (m.SenderId == currentMemberId 
+                    && !m.SenderDeleted
+                    && m.RecipientId == recipientId))
             .OrderBy(m => m.MessageSent)
             .Select(MessageExtensions.ConvertToDtoProjection())
             .ToListAsync();

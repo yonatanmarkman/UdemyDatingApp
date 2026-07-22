@@ -1,4 +1,5 @@
 using System;
+using API.Data;
 using API.DTOs;
 using API.Entities;
 using API.Extensions;
@@ -65,7 +66,8 @@ public class MessagesController(
     [HttpGet("thread/{recipientId}")]
     public async Task<ActionResult<IReadOnlyList<MessageDto>>> GetMessageThread(string recipientId)
     {
-        var result = await messageRepository.GetMessageThreadAsync(User.GetMemberId(), recipientId);
+        IReadOnlyList<MessageDto>? result
+             = await messageRepository.GetMessageThreadAsync(User.GetMemberId(), recipientId);
 
         if (result != null && result.Count > 0)
         {
@@ -84,5 +86,36 @@ public class MessagesController(
         DateTime lastMessageTime = membersLastMessageTimeCache.GetMemberData(recipientId);
 
         return lastMessageTime >= lastMessageTimeOnClientSide;
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteMessage(string id)
+    {
+        string memberId = User.GetMemberId();
+
+        Message? message = await messageRepository.GetMessageAsync(id);
+
+        if (message == null 
+         || message.SenderId != memberId 
+         && message.RecipientId != memberId)
+        {
+            return BadRequest("Cannot delete this message");
+        }
+
+        if (message.SenderId == memberId)
+            message.SenderDeleted = true;
+        
+        if (message.RecipientId == memberId)
+            message.RecipientDeleted = true;
+        
+        // Delete the message from the database only if both sides have deleted it.
+        if (message is {SenderDeleted: true, RecipientDeleted: true})
+            messageRepository.DeleteMessage(message);
+        
+
+        if (await messageRepository.SaveAllAsync())
+            return Ok();
+        
+        return BadRequest("Could not delete message");
     }
 }

@@ -1,32 +1,22 @@
-using System.Security.Cryptography;
-using System.Text;
-using API.Data;
 using API.DTOs;
 using API.Entities;
 using API.Extensions;
 using API.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
-public class AccountController(AppDbContext context, ITokenService tokenService) : BaseApiController
+public class AccountController(UserManager<AppUser> userManager, ITokenService tokenService) : BaseApiController
 {
     [HttpPost("register")] // api/account/register
     public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
     {
-        if (await EmailExists(registerDto.Email))
-        {
-            return BadRequest("Email unavailable. ");
-        }
-
-        using var hmac = new HMACSHA512();
-
         var user = new AppUser
         {
+            DisplayName = registerDto.DisplayName,
             Email = registerDto.Email,
             UserName = registerDto.Email,
-            DisplayName = registerDto.DisplayName,
             Member = new Member
             {
                 DisplayName = registerDto.DisplayName,
@@ -37,8 +27,17 @@ public class AccountController(AppDbContext context, ITokenService tokenService)
             }
         };
 
-        context.Users.Add(user);
-        await context.SaveChangesAsync();
+        IdentityResult result = await userManager.CreateAsync(user, registerDto.Password);
+
+        if (!result.Succeeded)
+        {
+            foreach (IdentityError error in result.Errors)
+            {
+                ModelState.AddModelError("identity", error.Description);
+            }
+
+            return ValidationProblem();
+        }
 
         return user.ConvertToUserDto(tokenService);
     }
@@ -46,17 +45,17 @@ public class AccountController(AppDbContext context, ITokenService tokenService)
     [HttpPost("login")]
     public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)
     {
-        AppUser? user = await context.Users.SingleOrDefaultAsync(user => user.Email == loginDto.Email);
-
+        AppUser? user = await userManager.FindByEmailAsync(loginDto.Email);
         if (user == null)
             return Unauthorized("Invalid login. ");
 
-        return user.ConvertToUserDto(tokenService);
-    }
+        // Utilize the Identity method to compare between the user's actual password,
+        // and the password that the user is currently attempting to login with
+        bool result = await userManager.CheckPasswordAsync(user, loginDto.Password);
 
-    private async Task<bool> EmailExists(string email)
-    {
-        return await context.Users.AnyAsync(user =>
-                user.Email!.ToLower() == email.ToLower());
+        if (!result)
+            return Unauthorized("Invalid login. ");
+
+        return user.ConvertToUserDto(tokenService);
     }
 }

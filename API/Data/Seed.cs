@@ -3,28 +3,45 @@ using System.Text;
 using System.Text.Json;
 using API.DTOs;
 using API.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Data;
 
 public class Seed
 {
-    public static async Task SeedUsers(AppDbContext context)
+    public static async Task SeedUsers(UserManager<AppUser> userManager)
     {
-        if (await context.Users.AnyAsync()) return;
+        if (await userManager.Users.AnyAsync()) return;
 
         List<SeedUserDto>? members = await LoadSeedData();
         if (members == null) return;
 
         foreach (SeedUserDto member in members)
         {
-            using var hmac = new HMACSHA512();
+            AppUser user = CreateAppUser(member);
 
-            AppUser user = CreateAppUser(member, hmac);
-            context.Users.Add(user);
+            IdentityResult creationResult = await userManager.CreateAsync(user, "Pa$$w0rd");
+            if (!creationResult.Succeeded)
+            {
+                Console.WriteLine(creationResult.Errors.First().Description);
+            }
+            IdentityResult addToRoleResult = await userManager.AddToRoleAsync(user, "Member");
+            if (!addToRoleResult.Succeeded)
+            {
+                Console.WriteLine(addToRoleResult.Errors.First().Description);
+            }
         }
 
-        await context.SaveChangesAsync();
+        var admin = new AppUser
+        {
+            UserName = "admin@test.com",
+            Email = "admin@test.com",
+            DisplayName = "Admin"
+        };
+        
+        await userManager.CreateAsync(admin, "Pa$$w0rd");
+        await userManager.AddToRolesAsync(admin, ["Admin", "Moderator"]);
     }
 
     private static async Task<List<SeedUserDto>?> LoadSeedData()
@@ -41,16 +58,15 @@ public class Seed
         return members;
     }
 
-    private static AppUser CreateAppUser(SeedUserDto member, HMACSHA512 hmac)
+    private static AppUser CreateAppUser(SeedUserDto member)
     {
         var user = new AppUser
         {
             Id = member.Id,
             Email = member.Email,
+            UserName = member.Email,
             DisplayName = member.DisplayName,
             ImageUrl = member.ImageUrl,
-            PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes("Pa$$w0rd")),
-            PasswordSalt = hmac.Key,
             Member = new Member
             {
                 Id = member.Id,

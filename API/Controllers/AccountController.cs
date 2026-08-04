@@ -39,7 +39,7 @@ public class AccountController(UserManager<AppUser> userManager, ITokenService t
             return ValidationProblem();
         }
 
-        return user.ConvertToUserDto(tokenService);
+        return await user.ConvertToUserDto(tokenService);
     }
 
     [HttpPost("login")]
@@ -56,6 +56,6 @@ public class AccountController(UserManager<AppUser> userManager, ITokenService t
         if (!result)
             return Unauthorized("Invalid login. ");
 
-        return user.ConvertToUserDto(tokenService);
+        return await user.ConvertToUserDto(tokenService);
     }
 }

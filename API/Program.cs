@@ -63,6 +63,10 @@ namespace API
                     };
                 });
 
+            builder.Services.AddAuthorizationBuilder()
+                .AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"))
+                .AddPolicy("ModeratePhotoRole", policy => policy.RequireRole("Admin", "Moderator"));
+
             WebApplication app = builder.Build();
 
             // Configure the HTTP request pipeline.

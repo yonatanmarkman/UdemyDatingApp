@@ -1,18 +1,20 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 using API.Entities;
 using API.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
 namespace API.Services;
 
-public class TokenService(IConfiguration config) : ITokenService
+public class TokenService(IConfiguration config, UserManager<AppUser> userManager) : ITokenService
 {
     static readonly int SIXTY_FOUR = 64;
     static readonly int SEVEN_DAYS = 7;
 
-    public string CreateToken(AppUser user)
+    public async Task<string> CreateToken(AppUser user)
     {
         string tokenKey = config["TokenKey"] ?? throw new Exception("Cannot get token key. ");
 
@@ -28,6 +30,10 @@ public class TokenService(IConfiguration config) : ITokenService
             new(ClaimTypes.Email, user.Email!),
             new(ClaimTypes.NameIdentifier, user.Id)
         };
+
+        IList<string> roles = await userManager.GetRolesAsync(user);
+
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var creds = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
 

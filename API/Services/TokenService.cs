@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using API.Entities;
@@ -12,7 +13,7 @@ namespace API.Services;
 public class TokenService(IConfiguration config, UserManager<AppUser> userManager) : ITokenService
 {
     static readonly int SIXTY_FOUR = 64;
-    static readonly int SEVEN_DAYS = 7;
+    static readonly int SEVEN = 7;
 
     public async Task<string> CreateToken(AppUser user)
     {
@@ -40,15 +41,20 @@ public class TokenService(IConfiguration config, UserManager<AppUser> userManage
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddDays(SEVEN_DAYS),
+            Expires = DateTime.UtcNow.AddMinutes(SEVEN),
             SigningCredentials = creds
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();
 
-        var token = tokenHandler.CreateToken(tokenDescriptor);
+        SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
 
         return tokenHandler.WriteToken(token);
     }
 
+    public string GenerateRefreshToken()
+    {
+        var randomBytes = RandomNumberGenerator.GetBytes(64);
+        return Convert.ToBase64String(randomBytes);
+    }
 }

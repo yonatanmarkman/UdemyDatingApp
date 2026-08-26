@@ -5,9 +5,11 @@ using API.Helpers;
 using API.Interfaces;
 using API.Middleware;
 using API.Services;
+using API.SignalR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 
 namespace API
@@ -40,6 +42,8 @@ namespace API
             builder.Services.Configure<CloudinarySettings>(
                 builder.Configuration.GetSection("CloudinarySettings")
             );
+            builder.Services.AddSignalR();
+            builder.Services.AddSingleton<PresenceTracker>();
 
             builder.Services.AddIdentityCore<AppUser>(opt =>
             {
@@ -61,6 +65,22 @@ namespace API
                         ValidateIssuer = false,
                         ValidateAudience = false
                     };
+
+                    options.Events = new JwtBearerEvents()
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            StringValues accessToken = context.Request.Query["access_token"];
+                            PathString path = context.HttpContext.Request.Path;
+                            if (!string.IsNullOrEmpty(accessToken) 
+                                && path.StartsWithSegments("/hubs"))
+                            {
+                                context.Token = accessToken;
+                            }
+
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
 
             builder.Services.AddAuthorizationBuilder()
@@ -81,6 +101,7 @@ namespace API
             app.UseAuthorization();
 
             app.MapControllers();
+            app.MapHub<PresenceHub>("hubs/presence");
 
             using IServiceScope scope = app.Services.CreateScope();
             IServiceProvider services = scope.ServiceProvider;

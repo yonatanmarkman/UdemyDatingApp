@@ -6,6 +6,7 @@ import { DatePipe } from '@angular/common';
 import { TimeAgoPipe } from '../../../core/pipes/time-ago-pipe';
 import { FormsModule } from '@angular/forms';
 import { PresenceService } from '../../../core/services/presence-service';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-member-messages',
@@ -15,11 +16,12 @@ import { PresenceService } from '../../../core/services/presence-service';
 })
 export class MemberMessages implements OnInit {
   @ViewChild('messageEndRef') messageEndRef!: ElementRef
-  private messageService = inject(MessageService);
+  protected messageService = inject(MessageService);
   private memberService = inject(MemberService);
   protected presenceService = inject(PresenceService);
   protected messages = signal<Message[]>([]);
   protected messageContent = '';
+  private activatedRoute = inject(ActivatedRoute);
 
   constructor() {
     effect(() => {
@@ -31,22 +33,15 @@ export class MemberMessages implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadMessages();
-  }
-
-  loadMessages() {
-    const memberId = this.memberService.member()?.id;
-    if (memberId) {
-        this.messageService.getMessageThread(memberId).subscribe({
-          next: messages => 
-          {
-            this.messages.set(messages.map(message => ({
-            ...message,
-            currentUserSender: message.senderId !== memberId
-            })));
-          }
-        });
-    }
+    this.activatedRoute.parent?.paramMap.subscribe({
+      next: params => {
+        const otherUserId = params.get('id');
+        if (!otherUserId) {
+          throw new Error('Cannot connect to hub. ');
+        }
+        this.messageService.createHubConnection(otherUserId);
+      }
+    });
   }
 
   sendMessage() {

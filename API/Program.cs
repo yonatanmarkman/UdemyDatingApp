@@ -102,6 +102,7 @@ namespace API
 
             app.MapControllers();
             app.MapHub<PresenceHub>("hubs/presence");
+            app.MapHub<MessageHub>("hubs/messages");
 
             using IServiceScope scope = app.Services.CreateScope();
             IServiceProvider services = scope.ServiceProvider;

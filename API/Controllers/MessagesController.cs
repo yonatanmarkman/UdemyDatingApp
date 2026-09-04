@@ -1,5 +1,3 @@
-using System;
-using API.Data;
 using API.DTOs;
 using API.Entities;
 using API.Extensions;
@@ -112,7 +110,6 @@ public class MessagesController(
         if (message is {SenderDeleted: true, RecipientDeleted: true})
             messageRepository.DeleteMessage(message);
         
-
         if (await messageRepository.SaveAllAsync())
             return Ok();
         

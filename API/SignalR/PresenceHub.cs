@@ -8,14 +8,10 @@ namespace API.SignalR;
 [Authorize]
 public class PresenceHub(PresenceTracker presenceTracker) : Hub
 {
-    const string _UserOnlineMethodName = "UserOnline";
-    const string _UserOfflineMethodName = "UserOffline";
-    const string _GetOnlineUsersMethodName = "GetOnlineUsers";
-
     public override async Task OnConnectedAsync()
     {
         await presenceTracker.UserConnected(GetUserId(), Context.ConnectionId);
-        await Clients.Others.SendAsync(_UserOnlineMethodName, GetUserId());
+        await Clients.Others.SendAsync(MethodNameConstants._UserOnlineMethodName, GetUserId());
 
         await MakeCallerNotifyTheCurrentUsers();
 
@@ -25,7 +21,7 @@ public class PresenceHub(PresenceTracker presenceTracker) : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         await presenceTracker.UserDisconnected(GetUserId(), Context.ConnectionId);
-        await Clients.Others.SendAsync(_UserOfflineMethodName, GetUserId());
+        await Clients.Others.SendAsync(MethodNameConstants._UserOfflineMethodName, GetUserId());
 
         await MakeCallerNotifyTheCurrentUsers();
         
@@ -35,7 +31,7 @@ public class PresenceHub(PresenceTracker presenceTracker) : Hub
     private async Task MakeCallerNotifyTheCurrentUsers()
     {
         string[] currentUsers = await presenceTracker.GetOnlineUsers();
-        await Clients.Caller.SendAsync(_GetOnlineUsersMethodName, currentUsers);
+        await Clients.Caller.SendAsync(MethodNameConstants._GetOnlineUsersMethodName, currentUsers);
     }
 
     private string GetUserId()

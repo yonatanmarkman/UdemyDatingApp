@@ -31,13 +31,17 @@ export class MessageService {
     
     this.hubConnection.start().catch(error => console.log(error));
 
-    this.hubConnection.on('ReceiveMessageThread', 
-      (messages: Message[]) => {
-        this.messageThread.set(messages.map(message => ({
+    this.hubConnection.on('ReceiveMessageThread', (messages: Message[]) => {
+      this.messageThread.set(messages.map(message => ({
           ...message,
           currentUserSender: message.senderId !== otherUserId
-          })));
-      })
+        })));
+    });
+    
+    this.hubConnection.on('NewMessage', (message: Message) => {
+      message.currentUserSender = (message.senderId === currentUser.id);
+      this.messageThread.update(messages => [...messages, message]);
+    });
   }
 
   stopHubConnection() {
@@ -61,7 +65,7 @@ export class MessageService {
   }
 
   sendMessage(recipientId: string, content: string) {
-    return this.http.post<Message>(this.baseUrl + 'messages', {recipientId, content});
+    return this.hubConnection?.invoke('SendMessage', {recipientId, content});
   }
 
   deleteMessage(id: string) {

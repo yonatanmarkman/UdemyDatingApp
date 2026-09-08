@@ -21,6 +21,7 @@ public class MessageHub(
         string groupName = GetGroupName(currentUser, otherUser);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+        await AddConnectionToGroup(groupName);
 
         IReadOnlyList<MessageDto> messages
              = await messageRepository.GetMessageThreadAsync(currentUser, otherUser);
@@ -63,19 +64,44 @@ public class MessageHub(
             Content = sendMessageDto.Content
         };
 
+        string groupName = GetGroupName(sender.Id, recipient.Id);
+        Group? group = await messageRepository.GetMessageGroupAsync(groupName);
+
+        if (group != null && group.Connections
+            .Any(conn => conn.UserId == message.RecipientId))
+        {
+            message.DateRead = DateTime.UtcNow;
+        }
+
         messageRepository.AddMessage(message);
 
         if (await messageRepository.SaveAllAsync())
         {
-            string group = GetGroupName(sender.Id, recipient.Id);
-            await Clients.Group(group)
+            await Clients.Group(groupName)
                 .SendAsync(MethodNameConstants._NewMessage, message.ConvertToDto());
         }
     }
 
-    public override Task OnDisconnectedAsync(Exception? exception)
+    public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        return base.OnDisconnectedAsync(exception);
+        await messageRepository.RemoveConnectionAsync(Context.ConnectionId);
+        await base.OnDisconnectedAsync(exception);
+    }
+
+    private async Task<bool> AddConnectionToGroup(string groupName)
+    {
+        Group? group = await messageRepository.GetMessageGroupAsync(groupName);
+        var connection = new Connection(Context.ConnectionId, GetCurrentUserId());
+
+        if (group == null)
+        {
+            group = new Group(groupName);
+            messageRepository.AddGroup(group);
+        }
+
+        group.Connections.Add(connection);
+
+        return await messageRepository.SaveAllAsync();
     }
 
     /*

@@ -1,4 +1,3 @@
-using System;
 using API.DTOs;
 using API.Entities;
 using API.Extensions;
@@ -93,5 +92,38 @@ public class MessageRepository(AppDbContext context) : IMessageRepository
     public async Task<bool> SaveAllAsync()
     {
         return await context.SaveChangesAsync() > 0;
+    }
+
+    public void AddGroup(Group group)
+    {
+        context.Groups.Add(group);
+    }
+
+    public async Task RemoveConnectionAsync(string connectionId)
+    {
+        await context.Connections
+            .Where(group => group.ConnectionId == connectionId)
+            .ExecuteDeleteAsync();
+    }
+
+    public async Task<Connection?> GetConnectionAsync(string connectionId)
+    {
+        return await context.Connections.FindAsync(connectionId);
+    }
+
+    public async Task<Group?> GetMessageGroupAsync(string groupName)
+    {
+        return await context.Groups
+            .Include(group => group.Connections)
+            .FirstOrDefaultAsync(group => group.Name == groupName);
+    }
+
+    public async Task<Group?> GetGroupForConnectionAsync(string connectionId)
+    {
+        return await context.Groups
+            .Include(group => group.Connections)
+            .Where(group => group.Connections.Any(conn
+                => conn.ConnectionId == connectionId))
+            .FirstOrDefaultAsync();
     }
 }

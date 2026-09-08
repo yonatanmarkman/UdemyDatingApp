@@ -67,6 +67,8 @@ public class MessageHub(
         string groupName = GetGroupName(sender.Id, recipient.Id);
         Group? group = await messageRepository.GetMessageGroupAsync(groupName);
 
+        // If the recipient is connected whilst the message is being sent,
+        // then set the 'Date read' to be DateTime.UtcNow.
         if (group != null && group.Connections
             .Any(conn => conn.UserId == message.RecipientId))
         {

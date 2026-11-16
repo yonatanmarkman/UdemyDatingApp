@@ -10,7 +10,8 @@ namespace API.SignalR;
 [Authorize]
 public class MessageHub(
     IMessageRepository messageRepository,
-    IMemberRepository memberRepository
+    IMemberRepository memberRepository,
+    IHubContext<PresenceHub> presenceHub
     ) : Hub
 {
     public override async Task OnConnectedAsync()
@@ -66,11 +67,12 @@ public class MessageHub(
 
         string groupName = GetGroupName(sender.Id, recipient.Id);
         Group? group = await messageRepository.GetMessageGroupAsync(groupName);
+        bool recipientInGroup = group != null && group.Connections
+                            .Any(conn => conn.UserId == message.RecipientId);
 
         // If the recipient is connected whilst the message is being sent,
         // then set the 'Date read' to be DateTime.UtcNow.
-        if (group != null && group.Connections
-            .Any(conn => conn.UserId == message.RecipientId))
+        if (recipientInGroup)
         {
             message.DateRead = DateTime.UtcNow;
         }
@@ -81,6 +83,16 @@ public class MessageHub(
         {
             await Clients.Group(groupName)
                 .SendAsync(MethodNameConstants._NewMessage, message.ConvertToDto());
+            List<string> connections
+                 = await PresenceTracker.GetConnectionsForUser(recipient.Id);
+
+            // Notify the recipient about the new message,
+            // if he's not connected to the group.
+            if (connections != null && connections.Count > 0 && !recipientInGroup)
+            {
+                await presenceHub.Clients.Clients(connections)
+                    .SendAsync(MethodNameConstants._NewMessageReceived, message.ConvertToDto());
+            }
         }
     }
 

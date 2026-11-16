@@ -7,5 +7,6 @@ internal static class MethodNameConstants
     public const string _GetOnlineUsersMethodName = "GetOnlineUsers";
     public const string _ReceiveMessageThread = "ReceiveMessageThread";
     public const string _NewMessage = "NewMessage";
+    public const string _NewMessageReceived = "NewMessageReceived";
 
 }

@@ -24,12 +24,18 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
 
   const cacheKey = generateCacheKey(req.url, req.params);
 
+  // Modifying the likes data means that the likes cache is now invalid
   if (req.method.includes('POST') && req.url.includes('/likes')) {
     invalidateCache('/likes');
   }
 
+  // Modifying the messages data means that the messages cache is now invalid
   if (req.method.includes('POST') && req.url.includes('/messages')) {
     invalidateCache('/messages');
+  }
+
+  if (req.method.includes('POST') && req.url.includes('/logout')) {
+    cache.clear();
   }
 
   // If the request method is a 'GET' method,

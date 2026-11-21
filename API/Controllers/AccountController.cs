@@ -2,6 +2,7 @@ using API.DTOs;
 using API.Entities;
 using API.Extensions;
 using API.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -103,5 +104,23 @@ public class AccountController(UserManager<AppUser> userManager, ITokenService t
         };
 
         Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<ActionResult> Logout()
+    {
+        // When the user logs out, we immediately update the RefreshToken data,
+        // so that he isn't "logged in" when he enters the page again, after logout.
+        await userManager.Users
+            .Where(user => user.Id == User.GetMemberId())
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(appUser => appUser.RefreshToken, _ => null) // Set the RefreshToken to null
+                .SetProperty(appUser => appUser.RefreshTokenExpiry, _ => null) // Set the RefreshToken to null
+                );
+        
+        Response.Cookies.Delete("refreshToken");
+
+        return Ok();
     }
 }

@@ -1,4 +1,4 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { LikesParams, Member } from '../../types/member';
@@ -16,7 +16,17 @@ export class LikesService {
   likeIds = signal<string[]>([]);
 
   toggleLike(targetMemberId: string) {
-    return this.httpClient.post(`${this.baseUrl}likes/${targetMemberId}`, {});
+    return this.httpClient.post(`${this.baseUrl}likes/${targetMemberId}`, {}).subscribe({
+      next: () => {
+        if (this.likeIds().includes(targetMemberId)) {
+          // Like has been toggled off - Remove this member's id from the MemberCard's ids list
+          this.likeIds.update(ids => ids.filter(x => x !== targetMemberId));
+        } else {
+          // Like has been toggled on - Update the MemberCard's ids list with this member's id
+          this.likeIds.update(ids => [...ids, targetMemberId]);
+        }
+      }
+    });
   }
 
   getLikes(likesParams: LikesParams) {

@@ -119,6 +119,7 @@ public class AccountController(UserManager<AppUser> userManager, ITokenService t
                 .SetProperty(appUser => appUser.RefreshTokenExpiry, _ => null) // Set the RefreshToken to null
                 );
         
+        // Delete the 'refreshToken' field from the cookies as well.
         Response.Cookies.Delete("refreshToken");
 
         return Ok();

@@ -7,19 +7,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-public class MessagesController(
-    IMessageRepository messageRepository,
-    IMemberRepository memberRepository,
-    IMembersDataCache<DateTime> membersLastMessageTimeCache
+public class MessagesController(IUnitOfWork unitOfWork
     ) : BaseApiController
 {
     [HttpPost]
     public async Task<ActionResult<MessageDto>> SendMessage(
         SendMessageDto sendMessageDto)
     {
-        Member? sender = await memberRepository
+        Member? sender = await unitOfWork.MemberRepository
             .GetMemberByIdAsync(User.GetMemberId());
-        Member? recipient = await memberRepository
+        Member? recipient = await unitOfWork.MemberRepository
             .GetMemberByIdAsync(sendMessageDto.RecipientId);
 
         if (recipient == null 
@@ -36,12 +33,9 @@ public class MessagesController(
             Content = sendMessageDto.Content
         };
 
-        messageRepository.AddMessage(message);
+        unitOfWork.MessageRepository.AddMessage(message);
 
-        membersLastMessageTimeCache.SetMemberData(sender.Id, message.MessageSent);
-        membersLastMessageTimeCache.SetMemberData(recipient.Id, message.MessageSent);
-
-        if (await messageRepository.SaveAllAsync())
+        if (await unitOfWork.Complete())
         {
             return message.ConvertToDto();
         }
@@ -56,7 +50,7 @@ public class MessagesController(
         messageParams.MemberId = User.GetMemberId();
 
         PaginatedResult<MessageDto> result
-             = await messageRepository.GetMessagesForMemberAsync(messageParams);
+             = await unitOfWork.MessageRepository.GetMessagesForMemberAsync(messageParams);
 
         return result;
     }
@@ -65,25 +59,9 @@ public class MessagesController(
     public async Task<ActionResult<IReadOnlyList<MessageDto>>> GetMessageThread(string recipientId)
     {
         IReadOnlyList<MessageDto>? result
-             = await messageRepository.GetMessageThreadAsync(User.GetMemberId(), recipientId);
-
-        if (result != null && result.Count > 0)
-        {
-            membersLastMessageTimeCache.SetMemberData(User.GetMemberId(), result.Last().MessageSent);
-            membersLastMessageTimeCache.SetMemberData(recipientId, result.Last().MessageSent);
-        }
+             = await unitOfWork.MessageRepository.GetMessageThreadAsync(User.GetMemberId(), recipientId);
 
         return Ok(result);
-    }
-
-    
-    [HttpGet("checkNewMessages/{recipientId}")]
-    public bool CheckNewMessagesForRecipient(string recipientId,
-        [FromQuery] DateTime lastMessageTimeOnClientSide)
-    {
-        DateTime lastMessageTime = membersLastMessageTimeCache.GetMemberData(recipientId);
-
-        return lastMessageTime >= lastMessageTimeOnClientSide;
     }
 
     [HttpDelete("{id}")]
@@ -91,7 +69,7 @@ public class MessagesController(
     {
         string memberId = User.GetMemberId();
 
-        Message? message = await messageRepository.GetMessageAsync(id);
+        Message? message = await unitOfWork.MessageRepository.GetMessageAsync(id);
 
         if (message == null 
          || message.SenderId != memberId 
@@ -108,9 +86,9 @@ public class MessagesController(
         
         // Delete the message from the database only if both sides have deleted it.
         if (message is {SenderDeleted: true, RecipientDeleted: true})
-            messageRepository.DeleteMessage(message);
+            unitOfWork.MessageRepository.DeleteMessage(message);
         
-        if (await messageRepository.SaveAllAsync())
+        if (await unitOfWork.Complete())
             return Ok();
         
         return BadRequest("Could not delete message");

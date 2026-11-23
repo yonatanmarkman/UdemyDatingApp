@@ -11,7 +11,7 @@ namespace API.Controllers;
 
 [Authorize]
 public class MembersController(
-    IMemberRepository memberRepository,
+    IUnitOfWork unitOfWork,
     IPhotoService photoService)
      : BaseApiController
 {
@@ -22,7 +22,7 @@ public class MembersController(
         memberParams.CurrentMemberId = User.GetMemberId();
         
         PaginatedResult<Member> result
-             = await memberRepository.GetMembersAsync(memberParams);
+             = await unitOfWork.MemberRepository.GetMembersAsync(memberParams);
 
         return Ok(result);
     }
@@ -35,7 +35,7 @@ public class MembersController(
 
         try
         {
-            Member? member = await memberRepository.GetMemberByIdAsync(id);
+            Member? member = await unitOfWork.MemberRepository.GetMemberByIdAsync(id);
 
             if (member == null)
                 return NotFound();
@@ -52,7 +52,7 @@ public class MembersController(
     public async Task<ActionResult<IReadOnlyList<Photo>>> GetMemberPhotos(string id)
     {
         IReadOnlyList<Photo> result
-            = await memberRepository.GetPhotosForMemberAsync(id);
+            = await unitOfWork.MemberRepository.GetPhotosForMemberAsync(id);
 
         return Ok(result);
     }
@@ -62,7 +62,7 @@ public class MembersController(
     {
         string? memberId = User.GetMemberId();
 
-        Member? member = await memberRepository.GetMemberForUpdateAsync(memberId);
+        Member? member = await unitOfWork.MemberRepository.GetMemberForUpdateAsync(memberId);
 
         if (member == null)
             return BadRequest("Could not get member. ");
@@ -76,7 +76,7 @@ public class MembersController(
         // Update the User entity
         member.User.DisplayName = memberUpdateDto.DisplayName ?? member.User.DisplayName;
 
-        if (await memberRepository.SaveAllAsync())
+        if (await unitOfWork.Complete())
             return NoContent();
 
         return BadRequest("Failed to update member. ");
@@ -85,7 +85,7 @@ public class MembersController(
     [HttpPost("add-photo")]
     public async Task<ActionResult<Photo>> AddPhoto([FromForm] IFormFile file)
     {
-        Member? member = await memberRepository.GetMemberForUpdateAsync(User.GetMemberId());
+        Member? member = await unitOfWork.MemberRepository.GetMemberForUpdateAsync(User.GetMemberId());
 
         if (member == null)
             return BadRequest("Cannot update member. ");
@@ -114,7 +114,7 @@ public class MembersController(
         // Add the actual photo object reference into the member object
         member.Photos.Add(photo);
 
-        if (await memberRepository.SaveAllAsync())
+        if (await unitOfWork.Complete())
             return photo;
 
         // Saving failed - bad request
@@ -124,7 +124,7 @@ public class MembersController(
     [HttpPut("set-main-photo/{photoId}")]
     public async Task<ActionResult> SetMainPhoto(int photoId)
     {
-        Member? member = await memberRepository
+        Member? member = await unitOfWork.MemberRepository
             .GetMemberForUpdateAsync(User.GetMemberId());
 
         if (member == null)
@@ -141,7 +141,7 @@ public class MembersController(
         member.ImageUrl = photo.Url;
         member.User.ImageUrl = photo.Url;
 
-        if (await memberRepository.SaveAllAsync())
+        if (await unitOfWork.Complete())
             return NoContent();
 
         return BadRequest("Problem setting profile photo. ");
@@ -150,7 +150,7 @@ public class MembersController(
     [HttpDelete("delete-photo/{photoId}")]
     public async Task<ActionResult> DeletePhoto(int photoId)
     {
-        Member? member = await memberRepository
+        Member? member = await unitOfWork.MemberRepository
             .GetMemberForUpdateAsync(User.GetMemberId());
 
         if (member == null)
@@ -177,7 +177,7 @@ public class MembersController(
 
         member.Photos.Remove(photo);
 
-        if (await memberRepository.SaveAllAsync())
+        if (await unitOfWork.Complete())
             return Ok();
 
         return BadRequest("Problem deleting the photo. ");

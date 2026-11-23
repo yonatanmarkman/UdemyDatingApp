@@ -15,6 +15,4 @@ public interface ILikesRepository
     Task<bool> AddLike(MemberLike like);
 
     Task<bool> DeleteLike(MemberLike like);
-
-    Task<bool> SaveAllChanges();
 }

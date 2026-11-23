@@ -8,9 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace API.SignalR;
 
 [Authorize]
-public class MessageHub(
-    IMessageRepository messageRepository,
-    IMemberRepository memberRepository,
+public class MessageHub(IUnitOfWork unitOfWork,
     IHubContext<PresenceHub> presenceHub
     ) : Hub
 {
@@ -25,7 +23,7 @@ public class MessageHub(
         await AddConnectionToGroup(groupName);
 
         IReadOnlyList<MessageDto> messages
-             = await messageRepository.GetMessageThreadAsync(currentUser, otherUser);
+             = await unitOfWork.MessageRepository.GetMessageThreadAsync(currentUser, otherUser);
 
         await Clients.Group(groupName)
             .SendAsync(MethodNameConstants._ReceiveMessageThread, messages);
@@ -46,9 +44,9 @@ public class MessageHub(
 
     public async Task SendMessage(SendMessageDto sendMessageDto)
     {
-        Member? sender = await memberRepository
+        Member? sender = await unitOfWork.MemberRepository
             .GetMemberByIdAsync(GetCurrentUserId());
-        Member? recipient = await memberRepository
+        Member? recipient = await unitOfWork.MemberRepository
             .GetMemberByIdAsync(sendMessageDto.RecipientId);
 
         if (recipient == null 
@@ -66,7 +64,7 @@ public class MessageHub(
         };
 
         string groupName = GetGroupName(sender.Id, recipient.Id);
-        Group? group = await messageRepository.GetMessageGroupAsync(groupName);
+        Group? group = await unitOfWork.MessageRepository.GetMessageGroupAsync(groupName);
         bool recipientInGroup = group != null && group.Connections
                             .Any(conn => conn.UserId == message.RecipientId);
 
@@ -77,9 +75,9 @@ public class MessageHub(
             message.DateRead = DateTime.UtcNow;
         }
 
-        messageRepository.AddMessage(message);
+        unitOfWork.MessageRepository.AddMessage(message);
 
-        if (await messageRepository.SaveAllAsync())
+        if (await unitOfWork.Complete())
         {
             await Clients.Group(groupName)
                 .SendAsync(MethodNameConstants._NewMessage, message.ConvertToDto());
@@ -98,24 +96,24 @@ public class MessageHub(
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        await messageRepository.RemoveConnectionAsync(Context.ConnectionId);
+        await unitOfWork.MessageRepository.RemoveConnectionAsync(Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
     }
 
     private async Task<bool> AddConnectionToGroup(string groupName)
     {
-        Group? group = await messageRepository.GetMessageGroupAsync(groupName);
+        Group? group = await unitOfWork.MessageRepository.GetMessageGroupAsync(groupName);
         var connection = new Connection(Context.ConnectionId, GetCurrentUserId());
 
         if (group == null)
         {
             group = new Group(groupName);
-            messageRepository.AddGroup(group);
+            unitOfWork.MessageRepository.AddGroup(group);
         }
 
         group.Connections.Add(connection);
 
-        return await messageRepository.SaveAllAsync();
+        return await unitOfWork.Complete();
     }
 
     /*
